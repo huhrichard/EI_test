@@ -135,7 +135,7 @@ def thres_fmax(train_label_df, train_pred_df, testing_bool=False):
 
     return thres
 
-def CES_classifier(path, fold_count=range(5), agg=1, attr_imp=False):
+def CES_classifier(path, fold_count=range(5), agg=1, rank=False):
     assert exists(path)
     if not exists('%s/analysis' % path):
         mkdir('%s/analysis' % path)
@@ -161,7 +161,7 @@ def CES_classifier(path, fold_count=range(5), agg=1, attr_imp=False):
             train_predictions_dfs.append(train_pred_df)
             performance_dfs.append(perf_df)
             thres = thres_fmax(train_pred_df.label, train_pred_df.prediction)
-            if attr_imp:
+            if rank:
                 if fold == 1:
                     best_ensembles.append(best_ensemble)
         performance_df = pd.concat(performance_dfs)
@@ -179,7 +179,7 @@ def CES_classifier(path, fold_count=range(5), agg=1, attr_imp=False):
     predictions_only_df = predictions_df.loc[:,['prediction']]
     predictions_only_df.rename(columns={'prediction':'CES'}, inplace=True)
     print(predictions_only_df)
-    if attr_imp:
+    if rank:
         frequency_bp_selected = best_ensembles[0].value_counts()
         local_model_weight_df = pd.DataFrame(data=np.zeros((1,len(train_df.columns))), columns=train_df.columns, index=[0])
         for bp, freq in frequency_bp_selected.items():
@@ -193,7 +193,7 @@ def CES_classifier(path, fold_count=range(5), agg=1, attr_imp=False):
 
 
 
-def aggregating_ensemble(path, fold_count=range(5), agg=1, attr_imp=False, median=False):
+def aggregating_ensemble(path, fold_count=range(5), agg=1, rank=False, median=False):
     def _unbag_mean(df, agg=agg):
         df = common.unbag(df, agg)
         return df.mean(axis=1)
@@ -240,7 +240,7 @@ def aggregating_ensemble(path, fold_count=range(5), agg=1, attr_imp=False, media
     pred_out_df = predictions.to_frame()
     pred_out_df.columns = ['Mean']
     print(pred_out_df)
-    if attr_imp:
+    if rank:
         local_model_weight_df = pd.DataFrame(data=np.ones((1, len(train_df.columns))),
                                              columns=train_df.columns,
                                              index=[0])
@@ -254,7 +254,7 @@ def aggregating_ensemble(path, fold_count=range(5), agg=1, attr_imp=False, media
 
 
 
-def bestbase_classifier(path, fold_count=range(5), agg=1, attr_imp=False):
+def bestbase_classifier(path, fold_count=range(5), agg=1, rank=False):
     assert exists(path)
     if not exists('%s/analysis' % path):
         mkdir('%s/analysis' % path)
@@ -305,14 +305,8 @@ def stacked_generalization(path, stacker_name, stacker, fold, agg, stacked_df,
     return {'testing_df':df, "training": [train_labels, train_predictions], 'train_dfs': [train_df, train_labels],
             'stacked_df':stacked_df}
 
-def plot_scatter(df, path, x_col, y_col, hue_col, fn, title):
-    fig, ax = plt.subplots(1,1)
-    ax = sns.scatterplot(ax=ax, data=df, x=x_col, y=y_col, hue=hue_col, alpha=0.7)
-    ax.set_title(title)
-    fig.savefig(path+'/'+fn, bbox_inches="tight")
 
-
-def main_classification(path, f_list, agg=1, attr_imp=False):
+def main_classification(path, f_list, agg=1, rank=False):
     #
     dn = abspath(path).split('/')[-1]
     cols = ['data_name', 'fmax', 'method', 'auc', 'auprc']
@@ -327,10 +321,10 @@ def main_classification(path, f_list, agg=1, attr_imp=False):
 
     for key, val in aggregated_dict.items():
         print('[{}] Start building model #################################'.format(key))
-        perf = val(path, fold_values, agg, attr_imp)
+        perf = val(path, fold_values, agg, rank)
         if key != 'best base':
             fmax_perf = perf['f-measure']['F']
-            if attr_imp:
+            if rank:
                 local_model_weight_dfs.append(perf['model_weight'])
         else:
             fmax_perf = perf['f-measure']
@@ -370,13 +364,13 @@ def main_classification(path, f_list, agg=1, attr_imp=False):
         for fold in f_list:
             stack = stacked_generalization(path, stacker_name, stacker, fold, agg, stacked_df)
             stacked_df = stack.pop('stacked_df')
-            if attr_imp:
+            if rank:
                 if fold == 1:
                     stacking_output.append(stack)
             else:
                 stacking_output.append(stack)
         predictions_dfs = [s['testing_df'] for s in stacking_output]
-        if attr_imp:
+        if rank:
             training_dfs = stacking_output[0]['train_dfs'][0]
             training_labels = pd.DataFrame({'label': stacking_output[0]['train_dfs'][1]})
             stacker.fit(training_dfs, training_labels)
@@ -418,7 +412,7 @@ def main_classification(path, f_list, agg=1, attr_imp=False):
     dfs = pd.concat(dfs)
     predictions_dataframe = pd.concat(predictions_dataframes, axis=1)
 
-    if attr_imp is True:
+    if rank is True:
         print(local_model_weight_dfs)
         local_mr_df = pd.concat(local_model_weight_dfs)
         local_mr_df.to_csv(os.path.join(analysis_path, 'pi_stackers.csv'))
@@ -436,10 +430,10 @@ if __name__ == "__main__":
     auprc_sklearn = make_scorer(common.auprc, greater_is_better=True, needs_proba=True)
     ### parse arguments
     parser = argparse.ArgumentParser(description='Ensemble script of EI')
-    parser.add_argument('--path', '-P', type=str, required=True, help='data path')
+    parser.add_argument('--path', '-P', type=str, required=True, help='Path of the multimodal data')
     parser.add_argument('--fold', '-F', type=int, default=5, help='cross-validation fold')
     parser.add_argument('--aggregate', '-A', type=int, default=1, help='if aggregate is needed, feed bagcount, else 1')
-    parser.add_argument('--attr_imp', type=str2bool, default='False', help='get the attribute importance from stacker')
+    parser.add_argument('--rank', type=str2bool, default='False', help='Boolean of getting local model ranking or not (default:False)')
     args = parser.parse_args()
     data_path = abspath(args.path)
 
@@ -456,4 +450,4 @@ if __name__ == "__main__":
     else:
         fold_values = range(int(p['foldCount']))
 
-    main_classification(args.path, fold_values, args.aggregate, args.attr_imp)
+    main_classification(args.path, fold_values, args.aggregate, args.rank)

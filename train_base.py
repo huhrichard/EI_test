@@ -35,7 +35,7 @@ if __name__ == "__main__":
     parser.add_argument('--classpath', '-CP', type=str, default='./weka.jar', help='default weka path')
     parser.add_argument('--hpc', type=str2bool, default='true', help='use HPC cluster or not')
     parser.add_argument('--fold', '-F', type=int, default=5, help='number of cross-validation fold')
-    parser.add_argument('--attr_imp', type=str2bool, default='False', help='getting attribute importance')
+    parser.add_argument('--rank', type=str2bool, default='False', help='getting attribute importance')
     args = parser.parse_args()
     ### record starting time
     start = time()
@@ -88,11 +88,11 @@ if __name__ == "__main__":
         for parameters in all_parameters:
             project_path, classifier, fold, bag = parameters
             jf.write('groovy -cp %s %s/base_predictors.groovy %s %s %s %s %s %s\n' % (
-                classpath, working_dir, data_path, project_path, fold, bag, args.attr_imp, classifier))
+                classpath, working_dir, data_path, project_path, fold, bag, args.rank, classifier))
 
         if not args.hpc:
             jf.write('python combine_individual_feature_preds.py %s %s\npython combine_feature_predicts.py %s %s\n' % (
-                data_path, args.attr_imp, data_path, args.attr_imp))
+                data_path, args.rank, data_path, args.rank))
 
         return jf
 
@@ -113,7 +113,7 @@ if __name__ == "__main__":
         fn.write('mpirun selfsched < {}\n'.format(jobs_fn))
         fn.write('rm {}\n'.format(jobs_fn))
         fn.write('python combine_individual_feature_preds.py %s %s\npython combine_feature_predicts.py %s %s\n' % (
-        data_path, args.attr_imp, data_path, args.attr_imp))
+        data_path, args.rank, data_path, args.rank))
         fn.close()
         system('bsub < %s' % lsf_fn)
         system('rm %s' % lsf_fn)
