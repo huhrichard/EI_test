@@ -85,7 +85,9 @@ The prediction scores by the ensemble methods will be saved in `predictions.csv`
 ### More information about the implementation of EI
 We used 10 standard binary classification algorithms, such as support vector machine (SVM), random forest (RF) and logistic regression (LR), as implemented in Weka to derive local predictive models from each individual data modality.
 
-| Classifier Name | Weka Class Name |
+Here are the base classifier included in `classifier.txt`, which are used in `train_base.py`.
+
+| Base Classifier Name | Weka Class Name |
 |-----------------|-----------------|
 |AdaBoost | weka.classifiers.meta.AdaBoostM1 |
 | Decision Tree | weka.classifiers.trees.J48 |
@@ -97,3 +99,20 @@ We used 10 standard binary classification algorithms, such as support vector mac
 | Random Forest | weka.classifiers.trees.RandomForest |
 | Support Vector Machine | weka.classifiers.functions.SMO |
 | Rule-based classification | weka.classifiers.rules.PART |
+
+ We then applied the mean aggregation, ensemble selection method and stacking to these local models to generate the final EI model.
+
+ Here are the meta-classifiers used in stacking, which are used in `ensemble.py`.
+
+| Meta-classifier Name |Python Class Name|
+|----------------------|-----------------|
+| AdaBoost | sklearn.ensemble.AdaBoostClassifier |
+| Decision Tree | sklearn.tree.DecisionTreeClassifier |
+| Gradient Boosting | sklearn.ensemble.GradientBoostingClassifier |
+| K-nearest Neighbors | sklearn.neighbors.KNeighborsClassifier|
+| Logistic Regression | sklearn.linear\_model.LogisticRegression |
+| Naive Bayes | sklearn.naive\_bayes.GaussianNB|
+| Random Forest | sklearn.ensemble.RandomForestClassifier |
+| Support Vector Machine | sklearn.svm.SVC|
+| XGBoost | xgboost.XGBClassifier |
+
