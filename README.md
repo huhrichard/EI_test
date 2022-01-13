@@ -80,3 +80,20 @@ F-max scores of these models will be printed and written in the `performance.csv
 The prediction scores by the ensemble methods will be saved in `predictions.csv` file in `analysis` folder under the data path.
 
 ### Feature Ranking by EI
+
+
+### More information about the implementation of EI
+We used 10 standard binary classification algorithms, such as support vector machine (SVM), random forest (RF) and logistic regression (LR), as implemented in Weka to derive local predictive models from each individual data modality.
+
+| Classifier Name | Weka Class Name |
+|-----------------|-----------------|
+|AdaBoost | weka.classifiers.meta.AdaBoostM1 |
+| Decision Tree | weka.classifiers.trees.J48 |
+| Gradient Boosting | weka.classifiers.meta.LogitBoost |
+| K-nearest Neighbors | weka.classifiers.lazy.IBk |
+| Logistic Regression | weka.classifiers.functions.Logistic |
+| Voted Perceptron | weka.classifiers.functions.VotedPerceptron |
+| Naive Bayes | weka.classifiers.bayes.NaiveBayes |
+| Random Forest | weka.classifiers.trees.RandomForest |
+| Support Vector Machine | weka.classifiers.functions.SMO |
+| Rule-based classification | weka.classifiers.rules.PART |
