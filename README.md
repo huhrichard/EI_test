@@ -69,7 +69,7 @@ Arguments of ensemble.py:
 	--path, -P: Path of the multimodal data
 	--fold, -F: cross-validation fold
 	--rank: Boolean of getting local model ranking or not (default:False)
-
+	--ens_for_rank: Choose the ensemble for EI interpretation
 
 Run the follwoing command:
 
@@ -79,7 +79,27 @@ F-max scores of these models will be printed and written in the `performance.csv
 
 The prediction scores by the ensemble methods will be saved in `predictions.csv` file in `analysis` folder under the data path.
 
-### Feature Ranking by EI
+### Intepretation by EI
+
+Similar to the above step, we will run `train_base.py` and `ensemble.py` again, with option `--rank True`, to train the EI by the whole dataset.
+
+We first generate the local feature ranks (LFR) by the following:
+	
+	python train_base.py --path [path] --rank True
+
+This step will generate an new folder `feature_rank` under the data path, which contains dataset merged with a pseudo test set only for interpretation purpose.
+
+
+From the `analysis/performance.csv` generated before (`rank=False`), we may determine the performance of the ensembles by the Nested-CV setup. We suggest to use the best-performing ensemble for EI, eg `LR.S`, `CES` etc. So we may run generate the local model rank (LMR) by the following:
+
+	python ensemble.py --path [path] --ens_for_rank [ensemble_algorithm] --rank True
+
+
+After these two steps for calculating LFR and LMR, we may run the ensemble feature ranking by the following:
+
+	python ensemble_ranking.py --path [path] --ensemble [ensemble_algorithm]
+
+
 
 
 ### More information about the implementation of EI
@@ -93,11 +113,11 @@ Here are the base classifier included in `classifier.txt`, which are used in `tr
 | Decision Tree | weka.classifiers.trees.J48 |
 | Gradient Boosting | weka.classifiers.meta.LogitBoost |
 | K-nearest Neighbors | weka.classifiers.lazy.IBk |
-| Logistic Regression | weka.classifiers.functions.Logistic |
+| Logistic Regression | weka.classifiers.functions.Logistic -M 100 |
 | Voted Perceptron | weka.classifiers.functions.VotedPerceptron |
 | Naive Bayes | weka.classifiers.bayes.NaiveBayes |
 | Random Forest | weka.classifiers.trees.RandomForest |
-| Support Vector Machine | weka.classifiers.functions.SMO |
+| Support Vector Machine | weka.classifiers.functions.SMO -C 1.0E-3 |
 | Rule-based classification | weka.classifiers.rules.PART |
 
  We then applied the mean aggregation, ensemble selection method and stacking to these local models to generate the final EI model.
@@ -110,9 +130,9 @@ Here are the base classifier included in `classifier.txt`, which are used in `tr
 | Decision Tree | sklearn.tree.DecisionTreeClassifier |
 | Gradient Boosting | sklearn.ensemble.GradientBoostingClassifier |
 | K-nearest Neighbors | sklearn.neighbors.KNeighborsClassifier|
-| Logistic Regression | sklearn.linear\_model.LogisticRegression |
-| Naive Bayes | sklearn.naive\_bayes.GaussianNB|
+| Logistic Regression | sklearn.linear_model.LogisticRegression |
+| Naive Bayes | sklearn.naive_bayes.GaussianNB|
 | Random Forest | sklearn.ensemble.RandomForestClassifier |
-| Support Vector Machine | sklearn.svm.SVC|
+| Support Vector Machine | sklearn.svm.SVC(kernel='linear')|
 | XGBoost | xgboost.XGBClassifier |
 
